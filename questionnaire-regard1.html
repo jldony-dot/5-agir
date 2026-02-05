@@ -22,7 +22,53 @@
       </div>
     </div>
 
-    <div id="questionnaire"></div>
+    <div class="hero">
+      <h1>Portrait chinois – Regard 1.</h1>
+      <p>Tu vas évaluer une personne que tu connais bien. Ce questionnaire n’est ni un jugement, ni une note de performance.</p>
+      <p>Lis chaque phrase et demande-toi : “Est-ce que cela décrit bien sa manière d’agir aujourd’hui ?”.</p>
+
+      <hr>
+
+      <h2>Champs.</h2>
+      <div class="grid two mt">
+        <div>
+          <label>Portrait chinois de :</label>
+          <input id="subject" class="input" placeholder="Prénom (ou Prénom Nom)" />
+          <div class="small">Ce nom sera réutilisé dans les questionnaires “regard”.</div>
+        </div>
+        <div>
+          <label>Évaluation réalisée par :</label>
+          <input id="evaluator" class="input" placeholder="Ton prénom" />
+          <div class="small">Ce nom apparaîtra dans la synthèse finale.</div>
+        </div>
+      </div>
+
+      <div class="grid two mt">
+        <div class="kpi">
+          <div><b>Progression</b><span id="progressText">0 / 30 points</span></div>
+          <div style="min-width:220px; width:100%"><progress id="progress" value="0" max="30"></progress></div>
+        </div>
+        <div class="kpi">
+          <div><b>Règle</b><span class="small">Total strict</span></div>
+          <div><b>30</b> / 30</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Répartition des points.</h2>
+      <div class="small">Attribue entre 0 et 5 points à chaque phrase. La somme doit faire exactement 30.</div>
+      <div id="questionnaire" class="mt"></div>
+    </div>
+
+    <div class="card">
+      <div id="totalWarn" class="warn">Le total doit faire exactement 30.</div>
+      <div class="btnrow">
+        <button id="goResults" class="btn primary" disabled>Voir les résultats</button>
+        <button id="reset" class="btn danger" type="button">Réinitialiser</button>
+      </div>
+      <div class="footer">Conseil : réponds sur la base de ton expérience réelle de la personne.</div>
+    </div>
   </div>
 </body>
 </html>
