@@ -12,6 +12,8 @@
     <div class="nav">
       <div class="brand">5 Agir <span class="badge">Regard 1</span></div>
       <div class="links">
+        <a data-nav href="index.html">Introduction</a>
+        <a data-nav href="dynamiques.html">Dynamiques</a>
         <a data-nav href="questionnaire-auto.html">Auto</a>
         <a data-nav href="questionnaire-regard1.html">Regard 1</a>
         <a data-nav href="questionnaire-regard2.html">Regard 2</a>
@@ -20,50 +22,7 @@
       </div>
     </div>
 
-    <div class="hero">
-      <h1>Portrait chinois – Regard 1</h1>
-      <p>Tu vas évaluer une personne que tu connais bien. Ce questionnaire n’est ni un jugement, ni une note de performance.</p>
-      <p>Lis chaque phrase et demande-toi : <b>“Est-ce que cela décrit bien sa manière d’agir aujourd’hui ?”</b></p>
-      <p>Réponds sans chercher l’équilibre ou l’image idéale. Appuie-toi sur ton expérience réelle de la personne.</p>
-
-      <hr>
-
-      <h2>Champs</h2>
-      <div class="grid two" style="margin-top:10px">
-        <div>
-          <label>Portrait chinois de :</label><br>
-          <input id="subject" placeholder="Prénom (ou Prénom Nom)" style="width:100%" />
-          <div class="small">Si le nom est déjà saisi dans l’auto-évaluation, il se remplit automatiquement.</div>
-        </div>
-        <div>
-          <label>Évaluation réalisée par :</label><br>
-          <input id="evaluator" placeholder="Ton prénom + lien (ex: Marie, associée)" style="width:100%" />
-          <div class="small">Ce nom apparaîtra dans la synthèse finale.</div>
-        </div>
-      </div>
-
-      <div class="grid two" style="margin-top:14px">
-        <div class="kpi">
-          <div><b>Progression</b><span id="progressText">0 / 30 points</span></div>
-          <div style="min-width:220px"><progress id="progress" value="0" max="30"></progress></div>
-        </div>
-        <div class="kpi">
-          <div><b>Règle</b><span>Total strict</span></div>
-          <div><b>30</b> / 30</div>
-        </div>
-      </div>
-    </div>
-
     <div id="questionnaire"></div>
-
-    <div class="card">
-      <div id="totalWarn" class="warn">Le total doit faire exactement 30.</div>
-      <div class="btnrow">
-        <button id="goResults" class="primary">Voir les résultats</button>
-        <button id="reset" class="danger">Réinitialiser</button>
-      </div>
-      <div class="footer">Conseil : note ce que tu observes vraiment, pas ce que tu espères pour elle/lui.</div>
-    </div>
   </div>
 </body>
 </html>
