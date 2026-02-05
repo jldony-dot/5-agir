@@ -1,505 +1,631 @@
-/* =========
-   5 Agir – app.js (version figée / neutre / multi-questionnaires)
-   - 30 phrases officielles (figées)
-   - Questionnaire neutre (aucun Agir affiché)
-   - Auto + 3 regards (pages distinctes via body[data-form])
-   - Regards affichés en "Il/Elle ..." (3e personne)
-   - 0–5 par phrase, total strict = 30
-   - Ordre mélangé (stable par questionnaire)
-   - Résultats: regroupement par Agir + moyenne regards + comparaison + synthèse
-========= */
+/* =========================================================
+   5 AGIR — app.js (version robuste, clés unifiées, multi-pages)
+   - Auto-évaluation + Regard 1/2/3
+   - 30 phrases, total strict = 30, max 5 par phrase
+   - Questionnaire neutre (pas d’éléments visibles), ordre mélangé
+   - Résultats par éléments (Feu/Terre/Métal/Eau/Bois) + détail
+   - Stockage local (localStorage) — rien n’est envoyé sur Internet
+   ========================================================= */
 
-const FORMS = ["auto", "regard1", "regard2", "regard3"];
-const SUBJECT_KEY = "jld_5agir_subject_v2";
+/* ------------------------- Config ------------------------- */
+
+const VERSION = "v2"; // CHANGE ICI si tu veux réinitialiser tout (v3, v4, ...)
+const MAX_PER_ITEM = 5;
+const TOTAL_REQUIRED = 30;
+
+const FORMS = [
+  { key: "auto", label: "Auto-évaluation", evaluatorFixed: "Auto-évaluation" },
+  { key: "regard1", label: "Regard 1" },
+  { key: "regard2", label: "Regard 2" },
+  { key: "regard3", label: "Regard 3" },
+];
 
 const ELEMENTS = [
-  { key: "FEU", label: "Feu", tagline: "relation, expression, énergie, rayonnement" },
-  { key: "TERRE", label: "Terre", tagline: "lien, stabilité, régulation, cohésion" },
-  { key: "MÉTAL", label: "Métal", tagline: "structure, exigence, discernement, cadre" },
-  { key: "EAU", label: "Eau", tagline: "profondeur, temps long, fondations, sens" },
-  { key: "BOIS", label: "Bois", tagline: "élan, action, mouvement, conquête" },
+  { key: "feu", label: "Feu" },
+  { key: "terre", label: "Terre" },
+  { key: "metal", label: "Métal" },
+  { key: "eau", label: "Eau" },
+  { key: "bois", label: "Bois" },
 ];
 
-/* --- 30 phrases officielles (ne pas modifier sans décision explicite) --- */
-const PHRASES = [
-  // FEU (1–6)
-  "Je suis optimiste.",
-  "Je suis à l’aise à l’oral.",
-  "Je suis attentif(ve) au collectif.",
-  "Je suis à l’aise pour me mettre en avant.",
-  "J’insuffle de l’enthousiasme autour de moi.",
-  "Je suis à l’écoute des autres.",
-  // TERRE (7–12)
-  "Je suis bienveillant(e).",
-  "Je suis empathique.",
-  "Je suis capable de faire le lien entre les personnes.",
-  "Je suis pragmatique.",
-  "Je suis juste.",
-  "J’aime transmettre.",
-  // MÉTAL (13–18)
-  "Je suis rigoureux / rigoureuse.",
-  "Je suis rationnel(le).",
-  "Je suis analytique.",
-  "Je suis attentif(ve) aux détails.",
-  "Je suis objectif(ve).",
-  "Je suis réaliste.",
-  // EAU (19–24)
-  "Je suis patient(e).",
-  "Je suis discret(e).",
-  "Je suis fidèle à mes principes.",
-  "Je suis prudent(e).",
-  "Je suis capable de prendre du recul.",
-  "Je capitalise pour durer.",
-  // BOIS (25–30)
-  "Je suis orienté(e) action.",
-  "Je suis audacieux / audacieuse.",
-  "Je suis efficace.",
-  "Je suis tenace.",
-  "Je suis créatif / créative.",
-  "Je suis impatient(e).",
+// 30 formules figées (mémoire)
+const ITEMS = [
+  // FEU (1-6)
+  { id: 1, element: "feu", self: "Je suis optimiste." },
+  { id: 2, element: "feu", self: "Je suis à l’aise à l’oral." },
+  { id: 3, element: "feu", self: "Je suis attentif(ve) au collectif." },
+  { id: 4, element: "feu", self: "Je suis à l’aise pour me mettre en avant." },
+  { id: 5, element: "feu", self: "J’insuffle de l’énergie autour de moi." },
+  { id: 6, element: "feu", self: "Je suis à l’écoute des autres." },
+
+  // TERRE (7-12)
+  { id: 7, element: "terre", self: "Je suis bienveillant(e)." },
+  { id: 8, element: "terre", self: "Je suis empathique." },
+  { id: 9, element: "terre", self: "Je suis capable de faire le lien entre les personnes." },
+  { id: 10, element: "terre", self: "Je suis pragmatique." },
+  { id: 11, element: "terre", self: "Je suis juste." },
+  { id: 12, element: "terre", self: "J’aime transmettre." },
+
+  // MÉTAL (13-18)
+  { id: 13, element: "metal", self: "Je suis rigoureux / rigoureuse." },
+  { id: 14, element: "metal", self: "Je suis rationnel(le)." },
+  { id: 15, element: "metal", self: "Je suis analytique." },
+  { id: 16, element: "metal", self: "Je suis attentif(ve) aux détails." },
+  { id: 17, element: "metal", self: "Je suis objectif(ve)." },
+  { id: 18, element: "metal", self: "Je suis réaliste." },
+
+  // EAU (19-24)
+  { id: 19, element: "eau", self: "Je suis patient(e)." },
+  { id: 20, element: "eau", self: "Je suis discret(e)." },
+  { id: 21, element: "eau", self: "Je suis fidèle à mes principes." },
+  { id: 22, element: "eau", self: "Je suis prudent(e)." },
+  { id: 23, element: "eau", self: "Je suis capable de prendre du recul." },
+  { id: 24, element: "eau", self: "Je capitalise pour durer." },
+
+  // BOIS (25-30)
+  { id: 25, element: "bois", self: "Je suis orienté(e) action." },
+  { id: 26, element: "bois", self: "Je suis audacieux / audacieuse." },
+  { id: 27, element: "bois", self: "Je suis efficace." },
+  { id: 28, element: "bois", self: "Je suis tenace." },
+  { id: 29, element: "bois", self: "Je suis créatif / créative." },
+  { id: 30, element: "bois", self: "Je suis impatient(e)." },
 ];
 
-/* ---------- Utils ---------- */
+/* ------------------------- Utils -------------------------- */
 
-function $(id) { return document.getElementById(id); }
-
-function escapeHtml(s){
-  return String(s)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+function $(id) {
+  return document.getElementById(id);
 }
 
-function clampInt(v, min, max){
-  const n = parseInt(v, 10);
-  if(Number.isNaN(n)) return min;
-  return Math.max(min, Math.min(max, n));
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function getForm(){
-  const f = document.body?.dataset?.form;
-  return FORMS.includes(f) ? f : null;
+function clampInt(n, min, max) {
+  const x = Number.isFinite(n) ? n : parseInt(String(n), 10);
+  if (!Number.isFinite(x)) return min;
+  return Math.max(min, Math.min(max, Math.trunc(x)));
 }
 
-function storageKey(form){
-  return `jld_5agir_${form}_v2`;
+function storageKey(formKey) {
+  return `jld_5agir_${formKey}_${VERSION}`;
 }
 
-function loadSubjectName(){
-  return (localStorage.getItem(SUBJECT_KEY) || "").trim();
-}
-function saveSubjectName(name){
-  localStorage.setItem(SUBJECT_KEY, (name || "").trim());
+function safeStorageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
-function defaultState(){
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function defaultState() {
   return {
     meta: {
-      subject: "",
-      evaluator: "",
-      displayOrder: null, // tableau d’index 0..29
+      subject: "",     // Portrait chinois de :
+      evaluator: "",   // Évaluation réalisée par :
+      updatedAt: 0,
     },
-    // answers[i] = 0..5
-    answers: Array.from({ length: PHRASES.length }, () => 0),
+    order: [],         // ordre mélangé des 30 items
+    answers: {},       // { [itemId]: number }
   };
 }
 
-function loadState(form){
-  try{
-    const raw = localStorage.getItem(storageKey(form));
-    if(!raw) return defaultState();
-    const s = JSON.parse(raw);
-
-    // garde-fous
-    if(!Array.isArray(s.answers) || s.answers.length !== PHRASES.length){
-      s.answers = defaultState().answers;
+function loadState(formKey) {
+  const raw = safeStorageGet(storageKey(formKey));
+  if (!raw) return defaultState();
+  try {
+    const parsed = JSON.parse(raw);
+    // Normalisation légère pour éviter les états cassés
+    const s = defaultState();
+    if (parsed && typeof parsed === "object") {
+      s.meta = { ...s.meta, ...(parsed.meta || {}) };
+      s.order = Array.isArray(parsed.order) ? parsed.order : [];
+      s.answers = parsed.answers && typeof parsed.answers === "object" ? parsed.answers : {};
     }
-    s.meta = s.meta || defaultState().meta;
     return s;
-  }catch(e){
+  } catch {
     return defaultState();
   }
 }
 
-function saveState(form, state){
-  localStorage.setItem(storageKey(form), JSON.stringify(state));
+function saveState(formKey, state) {
+  state.meta = state.meta || {};
+  state.meta.updatedAt = Date.now();
+  return safeStorageSet(storageKey(formKey), JSON.stringify(state));
 }
 
-function clearState(form){
-  localStorage.removeItem(storageKey(form));
+function inferFormKey() {
+  const p = (location.pathname || "").toLowerCase();
+  if (p.includes("questionnaire-regard1")) return "regard1";
+  if (p.includes("questionnaire-regard2")) return "regard2";
+  if (p.includes("questionnaire-regard3")) return "regard3";
+  if (p.includes("questionnaire-auto")) return "auto";
+  return null;
 }
 
-function isRegard(form){
-  return form && form !== "auto";
-}
+function ensureOrder(state) {
+  const ids = ITEMS.map(i => i.id);
+  const valid = new Set(ids);
+  const hasAll =
+    Array.isArray(state.order) &&
+    state.order.length === ids.length &&
+    state.order.every(x => valid.has(x));
 
-/* --- util demandé : mapping index -> Agir (via la position 0..29) --- */
-function elementForIndex(index) {
-  if (index >= 0 && index <= 5) return "FEU";
-  if (index >= 6 && index <= 11) return "TERRE";
-  if (index >= 12 && index <= 17) return "MÉTAL";
-  if (index >= 18 && index <= 23) return "EAU";
-  if (index >= 24 && index <= 29) return "BOIS";
-  return "";
-}
+  if (hasAll) return state.order;
 
-/* --- "Je..." -> "Il/Elle..." pour les regards --- */
-function toThirdPersonFR(s){
-  let out = String(s).trim();
-
-  // Remplacements simples, suffisants pour nos 30 phrases
-  out = out.replace(/^Je suis\b/i, "Il/Elle est");
-  out = out.replace(/^J’aime\b/i, "Il/Elle aime");
-  out = out.replace(/^J’insuffle\b/i, "Il/Elle insuffle");
-  out = out.replace(/^Je capitalise\b/i, "Il/Elle capitalise");
-  out = out.replace(/\bautour de moi\b/gi, "autour de lui/d’elle");
-
-  // ponctuation finale
-  if(!out.endsWith(".")) out = out + ".";
-  return out;
-}
-
-function getOrCreateDisplayOrder(form, state){
-  const ok = Array.isArray(state.meta.displayOrder) && state.meta.displayOrder.length === PHRASES.length;
-  if(ok) return state.meta.displayOrder;
-
-  const order = Array.from({ length: PHRASES.length }, (_,i)=>i);
-
-  // Fisher–Yates
-  for(let i=order.length-1; i>0; i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [order[i], order[j]] = [order[j], order[i]];
+  // On mélange une fois et on stocke (stable pour l’utilisateur)
+  const shuffled = [...ids];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-
-  state.meta.displayOrder = order;
-  saveState(form, state);
-  return order;
+  state.order = shuffled;
+  return shuffled;
 }
 
-function sumTotalPoints(answers){
-  return answers.reduce((acc, v)=> acc + clampInt(v, 0, 5), 0);
+function sumTotalPoints(answers) {
+  if (!answers || typeof answers !== "object") return 0;
+  let sum = 0;
+  for (const id of Object.keys(answers)) {
+    sum += clampInt(answers[id], 0, MAX_PER_ITEM);
+  }
+  return sum;
 }
 
-function sumByElements(answers){
-  const totals = { "FEU":0, "TERRE":0, "MÉTAL":0, "EAU":0, "BOIS":0 };
-  for(let i=0; i<PHRASES.length; i++){
-    const e = elementForIndex(i);
-    totals[e] += clampInt(answers[i], 0, 5);
+function sumByElement(answers) {
+  const totals = Object.fromEntries(ELEMENTS.map(e => [e.key, 0]));
+  if (!answers || typeof answers !== "object") return totals;
+
+  for (const it of ITEMS) {
+    const v = clampInt(answers[it.id], 0, MAX_PER_ITEM);
+    totals[it.element] += v;
   }
   return totals;
 }
 
-function rankingFromTotals(totals){
-  const arr = ELEMENTS.map(e => ({
-    key: e.key,
-    label: e.label,
-    score: totals[e.key] ?? 0,
-    tagline: e.tagline
-  }));
-  arr.sort((a,b)=> b.score - a.score);
-  return arr;
-}
-
-function averageTotals(listTotals){
-  const out = { "FEU":0, "TERRE":0, "MÉTAL":0, "EAU":0, "BOIS":0 };
-  if(listTotals.length === 0) return out;
-
-  for(const t of listTotals){
-    for(const k of Object.keys(out)){
-      out[k] += (t[k] ?? 0);
-    }
+function averageTotals(listOfTotals) {
+  const out = Object.fromEntries(ELEMENTS.map(e => [e.key, 0]));
+  const n = listOfTotals.length;
+  if (!n) return out;
+  for (const t of listOfTotals) {
+    for (const e of ELEMENTS) out[e.key] += (t?.[e.key] || 0);
   }
-  for(const k of Object.keys(out)){
-    out[k] = Math.round(out[k] / listTotals.length);
-  }
+  for (const e of ELEMENTS) out[e.key] = Math.round((out[e.key] / n) * 10) / 10;
   return out;
 }
 
-function setActiveNav(){
+// Transforme une phrase en “Il/Elle …” pour les Regards
+function selfToOther(s) {
+  let out = String(s ?? "").trim();
+
+  // Nettoyage ponctuation
+  if (!out.endsWith(".")) out += ".";
+
+  // Remplacements spécifiques (ton cas)
+  out = out.replace(/\bautour de moi\b/gi, "autour de lui/elle");
+
+  // Départs de phrase
+  out = out.replace(/^Je suis\b/i, "Il/Elle est");
+  out = out.replace(/^J’/i, "Il/Elle ");
+  out = out.replace(/^J'/i, "Il/Elle ");
+  out = out.replace(/^J’aime\b/i, "Il/Elle aime");
+  out = out.replace(/^J'aime\b/i, "Il/Elle aime");
+  out = out.replace(/^Je\b/i, "Il/Elle");
+
+  // Petites corrections (évite “Il/Elle suis” si collages bizarres)
+  out = out.replace(/\bIl\/Elle suis\b/gi, "Il/Elle est");
+
+  return out;
+}
+
+function textForForm(item, formKey) {
+  if (formKey === "auto") return item.self;
+  return selfToOther(item.self);
+}
+
+function setActiveNav() {
   const links = document.querySelectorAll("[data-nav]");
-  const path = location.pathname.split("/").pop();
-  links.forEach(a=>{
-    if(a.getAttribute("href") === path) a.classList.add("active");
+  if (!links.length) return;
+  const path = (location.pathname || "").split("/").pop() || "";
+  links.forEach(a => {
+    const href = (a.getAttribute("href") || "").split("/").pop();
+    if (href && href === path) a.classList.add("active");
   });
 }
 
-/* ---------- Questionnaire ---------- */
+/* ------------------- Questionnaire UI -------------------- */
 
-function updateProgressUI(form){
-  const state = loadState(form);
-  const total = sumTotalPoints(state.answers);
-
-  const bar = $("progress");
-  const txt = $("progressText");
-  if(bar){ bar.max = 30; bar.value = total; }
-  if(txt){ txt.textContent = `${total} / 30 points`; }
-
-  const warn = $("totalWarn");
-  if(warn){
-    if(total < 30){
-      warn.textContent = "Le total doit faire exactement 30.";
-      warn.className = "warn";
-    } else if(total === 30){
-      warn.textContent = "Parfait. Tu peux afficher les résultats.";
-      warn.className = "notice";
-    } else {
-      warn.textContent = `Tu as dépassé 30 points (${total}). Retire ${total - 30} point(s) pour revenir à 30.`;
-      warn.className = "warn";
-    }
+function questionnaireIntroHtml(formKey) {
+  if (formKey === "auto") {
+    return `
+      <div class="card">
+        <h1>Portrait chinois – Auto-évaluation</h1>
+        <p>Ce questionnaire n’est ni un test, ni une évaluation, ni un jugement. C’est une photographie de ton fonctionnement aujourd’hui.</p>
+        <p>Lis chaque phrase comme si tu te la disais intérieurement. Si ça te ressemble, mets des points. Si ça ne te ressemble pas, n’en mets pas.</p>
+        <p>Réponds sans suranalyser, sans chercher l’image idéale. Ce qui m’intéresse, c’est la justesse.</p>
+      </div>
+    `;
   }
-
-  const goBtn = $("goResults");
-  if(goBtn) goBtn.disabled = (total !== 30);
-}
-
-function mountQuestionnaire(){
-  const form = getForm();
-  const wrap = $("questionnaire");
-  if(!form || !wrap) return;
-
-  const state = loadState(form);
-
-  // Champs meta
-  const subject = $("subject");
-  const evaluator = $("evaluator");
-
-  const subjectSaved = loadSubjectName();
-  if(subject){
-    subject.value = state.meta.subject || subjectSaved || "";
-    subject.addEventListener("input", ()=>{
-      state.meta.subject = subject.value;
-      saveState(form, state);
-      saveSubjectName(subject.value);
-    });
-  }
-
-  if(evaluator){
-    evaluator.value = state.meta.evaluator || "";
-    evaluator.addEventListener("input", ()=>{
-      state.meta.evaluator = evaluator.value;
-      saveState(form, state);
-    });
-  } else {
-    // auto : évaluateur implicite
-    state.meta.evaluator = "Auto-évaluation";
-    saveState(form, state);
-  }
-
-  // Génère la liste neutre (ordre mélangé stable)
-  wrap.innerHTML = "";
-
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <h2>Items</h2>
-    <p class="small">Attribue une note de 0 à 5, puis ajuste pour obtenir un total exact de 30. Aucun item n’est “meilleur” qu’un autre.</p>
-  `;
-
-  const list = document.createElement("div");
-  const order = getOrCreateDisplayOrder(form, state);
-
-  order.forEach((idx)=>{
-    const row = document.createElement("div");
-    row.className = "row";
-
-    const phrase = isRegard(form) ? toThirdPersonFR(PHRASES[idx]) : PHRASES[idx];
-
-    const left = document.createElement("div");
-    left.innerHTML = `<label>${escapeHtml(phrase)}</label>`;
-
-    const right = document.createElement("div");
-    right.className = "right";
-
-    const input = document.createElement("input");
-    input.type = "number";
-    input.min = "0";
-    input.max = "5";
-    input.step = "1";
-    input.seal = "true";
-
-    input.value = clampInt(state.answers[idx] ?? 0, 0, 5);
-
-    input.addEventListener("input", ()=>{
-      const before = sumTotalPoints(loadState(form).answers);
-
-      const v = clampInt(input.value, 0, 5);
-      state.answers[idx] = v;
-      saveState(form, state);
-
-      const after = sumTotalPoints(loadState(form).answers);
-      updateProgressUI(form);
-
-      if(before <= 30 && after > 30){
-        alert(`Tu as dépassé 30 points (${after}). Ajuste pour revenir à 30.`);
-      }
-    });
-
-    const hint = document.createElement("span");
-    hint.className = "small";
-    hint.textContent = "0–5";
-
-    right.appendChild(input);
-    right.appendChild(hint);
-
-    row.appendChild(left);
-    row.appendChild(right);
-    list.appendChild(row);
-  });
-
-  card.appendChild(list);
-  wrap.appendChild(card);
-
-  // Boutons
-  const resetBtn = $("reset");
-  if(resetBtn){
-    resetBtn.addEventListener("click", ()=>{
-      if(!confirm("Réinitialiser ce questionnaire ?")) return;
-      clearState(form);
-      location.reload();
-    });
-  }
-
-  const goBtn = $("goResults");
-  if(goBtn){
-    goBtn.addEventListener("click", ()=>{
-      const total = sumTotalPoints(loadState(form).answers);
-      if(total !== 30){
-        alert(`Le questionnaire doit totaliser 30 points. Actuellement : ${total}.`);
-        return;
-      }
-      location.href = "resultats.html";
-    });
-  }
-
-  updateProgressUI(form);
-}
-
-/* ---------- Résultats ---------- */
-
-function readFormPayload(form){
-  const s = loadState(form);
-  const totalPoints = sumTotalPoints(s.answers);
-  const totals = sumByElements(s.answers);
-
-  const subject = (s.meta.subject || loadSubjectName() || "").trim();
-  const evaluator =
-    (form === "auto")
-      ? "Auto-évaluation"
-      : (s.meta.evaluator || "").trim();
-
-  return {
-    form,
-    subject,
-    evaluator,
-    totalPoints,
-    complete: totalPoints === 30,
-    totals,
-    rank: rankingFromTotals(totals),
-  };
-}
-
-function interpretKey(key){
-  const map = {
-    "BOIS":  { plus:"Cap, action, conquête.", risk:"Impatience, dispersion.", move:"Choisir 1 priorité claire, tenir un rythme simple." },
-    "FEU":   { plus:"Énergie relationnelle, expression, mobilisation.", risk:"Agitation, sur-réaction.", move:"Canaliser : 1 message, 1 engagement concret." },
-    "TERRE": { plus:"Cohésion, stabilité, régulation.", risk:"Évitement, inertie.", move:"Clarifier les règles du jeu et assumer les décisions." },
-    "MÉTAL": { plus:"Structure, exigence, clarté.", risk:"Rigidité, dureté.", move:"Décider net sans durcir ; simplifier les standards." },
-    "EAU":   { plus:"Recul, sens, profondeur.", risk:"Hésitation, retrait.", move:"Petites étapes + feedback court pour relancer." },
-  };
-  return map[key] || { plus:"", risk:"", move:"" };
-}
-
-function interpretationCard(title, rank){
-  const top = rank[0], second = rank[1], last = rank[rank.length-1];
-  const A = interpretKey(top.key), B = interpretKey(second.key), C = interpretKey(last.key);
-
   return `
     <div class="card">
-      <h2>${escapeHtml(title)}</h2>
-      <p><b>Dominante (${escapeHtml(top.label)})</b> : ${escapeHtml(A.plus)}</p>
-      <p class="small">Vigilance : ${escapeHtml(A.risk)}</p>
-      <p><b>Appui naturel (${escapeHtml(second.label)})</b> : ${escapeHtml(B.plus)}</p>
-      <p><b>Zone à sécuriser (${escapeHtml(last.label)})</b> : ${escapeHtml(C.plus)}</p>
-      <p class="small">Ce n’est pas un défaut. Piste : ${escapeHtml(C.move)}</p>
-      <div class="notice">Lecture utile : comment la personne décide, influence, structure, stabilise, et donne du sens. Ensuite on relie ça aux enjeux réels.</div>
+      <h1>Portrait chinois – ${escapeHtml(formLabel(formKey))}</h1>
+      <p>Tu vas évaluer une personne que tu connais bien. Ce questionnaire n’est ni un jugement, ni une note de performance.</p>
+      <p>Lis chaque phrase et demande-toi : <b>“Est-ce que cela décrit bien sa manière d’agir aujourd’hui ?”</b></p>
+      <p>Réponds sans chercher l’équilibre ou l’image idéale. Appuie-toi sur ton expérience réelle de la personne.</p>
     </div>
   `;
 }
 
-function buildComparisonCard(payloads){
-  const complete = payloads.filter(p=>p.complete);
-  if(complete.length === 0){
-    return `<div class="warn">Aucun questionnaire complet : pas de comparaison possible.</div>`;
+function formLabel(formKey) {
+  return (FORMS.find(f => f.key === formKey)?.label) || formKey;
+}
+
+function mountQuestionnaire() {
+  const root = $("questionnaire");
+  if (!root) return;
+
+  const formKey = inferFormKey() || root.getAttribute("data-form") || "auto";
+  const formCfg = FORMS.find(f => f.key === formKey) || FORMS[0];
+
+  // Charge état
+  const state = loadState(formKey);
+  const order = ensureOrder(state);
+
+  // Pré-remplissage du sujet depuis auto (pour les regards)
+  if (formKey !== "auto") {
+    const auto = loadState("auto");
+    const autoSubject = (auto.meta?.subject || "").trim();
+    if (autoSubject && !(state.meta?.subject || "").trim()) {
+      state.meta.subject = autoSubject;
+      saveState(formKey, state);
+    }
   }
 
-  const rows = complete.map(p=>{
-    const label = (p.form === "auto") ? "Auto" : `Regard ${p.form.replace("regard","")}`;
-    const who = (p.form === "auto") ? "Auto-évaluation" : (p.evaluator || "—");
-    const top = p.rank[0];
-    const last = p.rank[p.rank.length-1];
+  // Evaluateur fixé pour auto
+  if (formCfg.evaluatorFixed) {
+    state.meta.evaluator = formCfg.evaluatorFixed;
+    saveState(formKey, state);
+  }
+
+  // Rendu
+  root.innerHTML = `
+    ${questionnaireIntroHtml(formKey)}
+
+    <div class="card">
+      <h2>Champs</h2>
+      <div class="grid two">
+        <div>
+          <label class="label">Portrait chinois de :</label>
+          <input id="subject" class="input" placeholder="Prénom (ou Prénom Nom)" value="${escapeHtml(state.meta.subject || "")}" />
+          <div class="small">Ce nom sera réutilisé dans les questionnaires “regard”.</div>
+        </div>
+        <div>
+          <label class="label">Évaluation réalisée par :</label>
+          <input id="evaluator" class="input" placeholder="Ton prénom" value="${escapeHtml(state.meta.evaluator || "")}" ${formCfg.evaluatorFixed ? "disabled" : ""}/>
+          <div class="small">Ce nom apparaîtra dans la synthèse finale.</div>
+        </div>
+      </div>
+
+      <div class="grid two mt">
+        <div class="pillbox">
+          <div class="pilltitle">Progression</div>
+          <div class="pillvalue"><span id="progressVal">0</span> / ${TOTAL_REQUIRED} points</div>
+          <div class="bar"><div id="barFill" class="barfill" style="width:0%"></div></div>
+        </div>
+        <div class="pillbox">
+          <div class="pilltitle">Règle</div>
+          <div class="pillvalue">Total strict <span id="totalStrict">0</span> / ${TOTAL_REQUIRED}</div>
+          <div class="small">Max ${MAX_PER_ITEM} points par phrase.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Répartition des points</h2>
+      <div class="small">Attribue entre 0 et ${MAX_PER_ITEM} points à chaque phrase. La somme doit faire exactement ${TOTAL_REQUIRED}.</div>
+      <div id="list" class="list mt"></div>
+    </div>
+
+    <div class="card">
+      <div id="alert" class="warn" style="display:none"></div>
+      <div class="btnrow">
+        <a id="goResults" class="btn primary" href="resultats.html">Voir les résultats</a>
+        <button id="reset" class="btn" type="button">Réinitialiser</button>
+      </div>
+      <div class="small mt">Conseil : note ce qui est vrai aujourd’hui, pas ce que tu voudrais être / voir.</div>
+    </div>
+  `;
+
+  // DOM refs
+  const subjectEl = $("subject");
+  const evaluatorEl = $("evaluator");
+  const listEl = $("list");
+  const progressVal = $("progressVal");
+  const totalStrict = $("totalStrict");
+  const barFill = $("barFill");
+  const alertEl = $("alert");
+  const goResults = $("goResults");
+  const resetBtn = $("reset");
+
+  // Build list (ordre mélangé, neutre)
+  const rows = order.map((id, idx) => {
+    const it = ITEMS.find(x => x.id === id);
+    const label = textForForm(it, formKey);
+    const v = clampInt(state.answers[id] ?? 0, 0, MAX_PER_ITEM);
+    return `
+      <div class="row">
+        <div class="rowleft">
+          <div class="rowidx">#${idx + 1}</div>
+          <div class="rowtext">${escapeHtml(label)}</div>
+        </div>
+        <div class="rowright">
+          <input class="score" type="number" inputmode="numeric" min="0" max="${MAX_PER_ITEM}" step="1"
+                 data-id="${id}" value="${v}" />
+          <div class="hint">0–${MAX_PER_ITEM}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  listEl.innerHTML = rows;
+
+  function syncMeta() {
+    state.meta.subject = (subjectEl.value || "").trim();
+    if (!formCfg.evaluatorFixed) state.meta.evaluator = (evaluatorEl.value || "").trim();
+
+    // Si on est sur auto, on répercute le sujet dans les regards si vides
+    if (formKey === "auto") {
+      const subject = state.meta.subject.trim();
+      if (subject) {
+        for (const fk of ["regard1", "regard2", "regard3"]) {
+          const s2 = loadState(fk);
+          if (!(s2.meta?.subject || "").trim()) {
+            s2.meta.subject = subject;
+            saveState(fk, s2);
+          }
+        }
+      }
+    }
+
+    saveState(formKey, state);
+  }
+
+  function updateUI() {
+    const total = sumTotalPoints(state.answers);
+    progressVal.textContent = String(total);
+    totalStrict.textContent = String(total);
+
+    const pct = Math.min(100, Math.round((total / TOTAL_REQUIRED) * 100));
+    barFill.style.width = `${pct}%`;
+
+    // Alertes
+    if (total > TOTAL_REQUIRED) {
+      alertEl.style.display = "";
+      alertEl.textContent = `Tu as dépassé ${TOTAL_REQUIRED} points (${total}/${TOTAL_REQUIRED}). Retire ${total - TOTAL_REQUIRED} point(s).`;
+    } else if (total < TOTAL_REQUIRED) {
+      alertEl.style.display = "";
+      alertEl.textContent = `Le total doit faire exactement ${TOTAL_REQUIRED}. Il te manque ${TOTAL_REQUIRED - total} point(s).`;
+    } else {
+      alertEl.style.display = "none";
+      alertEl.textContent = "";
+    }
+
+    // Bouton résultats
+    const ok = total === TOTAL_REQUIRED;
+    goResults.classList.toggle("disabled", !ok);
+    goResults.setAttribute("aria-disabled", ok ? "false" : "true");
+  }
+
+  // Inputs listeners
+  subjectEl.addEventListener("input", syncMeta);
+  if (!formCfg.evaluatorFixed) evaluatorEl.addEventListener("input", syncMeta);
+
+  listEl.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLInputElement)) return;
+    if (!t.classList.contains("score")) return;
+
+    const id = parseInt(t.getAttribute("data-id") || "", 10);
+    const v = clampInt(t.value, 0, MAX_PER_ITEM);
+    t.value = String(v);
+
+    state.answers[id] = v;
+    saveState(formKey, state);
+    updateUI();
+  });
+
+  resetBtn.addEventListener("click", () => {
+    const keepOrder = state.order;
+    const keepMeta = state.meta;
+
+    const fresh = defaultState();
+    fresh.order = keepOrder && keepOrder.length === ITEMS.length ? keepOrder : [];
+    fresh.meta = keepMeta;
+
+    // Auto reset: evaluator fixé
+    if (formCfg.evaluatorFixed) fresh.meta.evaluator = formCfg.evaluatorFixed;
+
+    Object.assign(state, fresh);
+    saveState(formKey, state);
+
+    // Rafraîchit inputs
+    listEl.querySelectorAll("input.score").forEach(inp => (inp.value = "0"));
+    updateUI();
+  });
+
+  // Empêche d'aller aux résultats si pas OK
+  goResults.addEventListener("click", (e) => {
+    const total = sumTotalPoints(state.answers);
+    if (total !== TOTAL_REQUIRED) {
+      e.preventDefault();
+      updateUI();
+    } else {
+      // Save meta au moment du clic
+      syncMeta();
+    }
+  });
+
+  // Init
+  syncMeta();
+  updateUI();
+}
+
+/* ---------------------- Résultats UI ---------------------- */
+
+function readFormPayload(formKey) {
+  const s = loadState(formKey);
+  const totalPoints = sumTotalPoints(s.answers);
+  const totals = sumByElement(s.answers);
+
+  const subject = (s.meta?.subject || "").trim();
+  const evaluator =
+    (FORMS.find(f => f.key === formKey)?.evaluatorFixed)
+      ? (FORMS.find(f => f.key === formKey)?.evaluatorFixed)
+      : (s.meta?.evaluator || "").trim();
+
+  return {
+    formKey,
+    label: formLabel(formKey),
+    subject,
+    evaluator,
+    totalPoints,
+    complete: totalPoints === TOTAL_REQUIRED,
+    totals,
+    answers: s.answers || {},
+  };
+}
+
+function rankFromTotals(totals) {
+  const arr = ELEMENTS.map(e => ({
+    key: e.key,
+    label: e.label,
+    score: totals?.[e.key] || 0
+  }));
+  arr.sort((a, b) => b.score - a.score);
+  return arr;
+}
+
+function interpretationText(rank) {
+  // Peu de texte volontairement (tu valorises ton RDV)
+  const top = rank[0]?.label || "";
+  const low = rank[rank.length - 1]?.label || "";
+  return `
+    <div class="card">
+      <h2>Lecture très synthétique</h2>
+      <p>Ce rendu est volontairement générique : il te donne une première lecture des dominantes et des zones à sécuriser, sans “sur-interpréter”.</p>
+      <p><b>Dominante actuelle :</b> ${escapeHtml(top)}. <b>Zone plus faible :</b> ${escapeHtml(low)}.</p>
+      <p class="small">L’analyse fine (nuances, contextes, complémentarités, implications opérationnelles) est clarifiée en séance avec ton mentor préféré Jean-Luc D.</p>
+    </div>
+  `;
+}
+
+function mountResults() {
+  const root = $("results");
+  if (!root) return;
+
+  const payloads = FORMS.map(f => readFormPayload(f.key));
+  const subject =
+    (payloads.find(p => p.subject)?.subject || "").trim() ||
+    (loadState("auto").meta?.subject || "").trim() ||
+    "—";
+
+  const auto = payloads.find(p => p.formKey === "auto");
+  const regards = payloads.filter(p => p.formKey !== "auto");
+
+  const avgRegards = averageTotals(regards.filter(r => r.complete).map(r => r.totals));
+  const rankAuto = rankFromTotals(auto.totals);
+  const rankAvg = rankFromTotals(avgRegards);
+
+  const completionRows = payloads.map(p => `
+    <tr>
+      <td>${escapeHtml(p.label)}</td>
+      <td>${escapeHtml(p.evaluator || (p.formKey === "auto" ? "Auto-évaluation" : "—"))}</td>
+      <td>${p.complete ? "OK" : `Incomplet (${p.totalPoints}/${TOTAL_REQUIRED})`}</td>
+    </tr>
+  `).join("");
+
+  const totalsTableRows = ELEMENTS.map(e => {
+    const a = auto.totals[e.key] || 0;
+    const r1 = payloads.find(p => p.formKey === "regard1")?.totals?.[e.key] || 0;
+    const r2 = payloads.find(p => p.formKey === "regard2")?.totals?.[e.key] || 0;
+    const r3 = payloads.find(p => p.formKey === "regard3")?.totals?.[e.key] || 0;
+    const avg = avgRegards[e.key] || 0;
+
     return `
       <tr>
-        <td>${escapeHtml(label)}</td>
-        <td>${escapeHtml(who)}</td>
-        <td>${escapeHtml(top.label)} (${top.score})</td>
-        <td>${escapeHtml(last.label)} (${last.score})</td>
+        <td>${escapeHtml(e.label)}</td>
+        <td>${a}</td>
+        <td>${r1}</td>
+        <td>${r2}</td>
+        <td>${r3}</td>
+        <td><b>${avg}</b></td>
       </tr>
     `;
   }).join("");
 
-  return `
-    <div class="card">
-      <h2>Comparaison rapide</h2>
-      <table class="table">
-        <thead><tr><th>Source</th><th>Évaluateur</th><th>Dominante</th><th>Point bas</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="btnrow">
-        <button id="copyGlobal" class="primary">Copier un résumé global</button>
+  // Détail par éléments : liste des 30 phrases regroupées en chapitres
+  function detailSection(elementKey) {
+    const el = ELEMENTS.find(e => e.key === elementKey);
+    const list = ITEMS.filter(it => it.element === elementKey);
+
+    const rows = list.map(it => {
+      const a = clampInt(auto.answers[it.id] ?? 0, 0, MAX_PER_ITEM);
+      const r1 = clampInt(payloads.find(p => p.formKey === "regard1")?.answers?.[it.id] ?? 0, 0, MAX_PER_ITEM);
+      const r2 = clampInt(payloads.find(p => p.formKey === "regard2")?.answers?.[it.id] ?? 0, 0, MAX_PER_ITEM);
+      const r3 = clampInt(payloads.find(p => p.formKey === "regard3")?.answers?.[it.id] ?? 0, 0, MAX_PER_ITEM);
+
+      return `
+        <tr>
+          <td>${escapeHtml(it.self)}</td>
+          <td>${a}</td>
+          <td>${r1}</td>
+          <td>${r2}</td>
+          <td>${r3}</td>
+        </tr>
+      `;
+    }).join("");
+
+    return `
+      <div class="card">
+        <h2>${escapeHtml(el.label)}</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Formule</th>
+              <th>Auto</th>
+              <th>Regard 1</th>
+              <th>Regard 2</th>
+              <th>Regard 3</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
       </div>
-      <div class="footer">Astuce : les écarts entre auto et regards sont souvent l’information la plus utile.</div>
-    </div>
-  `;
-}
-
-function buildGlobalSummary(payloads){
-  const subject = (payloads.find(p=>p.subject)?.subject || loadSubjectName() || "—").trim();
-  const complete = payloads.filter(p=>p.complete);
-
-  const lines = [];
-  lines.push(`Portrait chinois de : ${subject}`);
-  lines.push(`Questionnaires complets : ${complete.length}/4`);
-
-  for(const p of complete){
-    const label = (p.form === "auto") ? "Auto" : `Regard ${p.form.replace("regard","")}`;
-    const who = (p.form === "auto") ? "Auto-évaluation" : (p.evaluator || "—");
-    const top = p.rank[0];
-    const last = p.rank[p.rank.length-1];
-    lines.push(`- ${label} (${who}) : dominante ${top.label} (${top.score}), point bas ${last.label} (${last.score})`);
+    `;
   }
-  return lines.join("\n");
-}
-
-function mountResults(){
-  const root = $("results");
-  if(!root) return;
-
-  const payloads = FORMS.map(readFormPayload);
-  const subject = (payloads.find(p=>p.subject)?.subject || loadSubjectName() || "").trim() || "—";
-
-  const auto = payloads.find(p=>p.form === "auto");
-  const regards = payloads.filter(p=>p.form !== "auto" && p.complete);
-  const avgRegards = rankingFromTotals(averageTotals(regards.map(r=>r.totals)));
 
   root.innerHTML = `
     <div class="card">
-      <h2>Résultats – Portrait chinois de : ${escapeHtml(subject)}</h2>
+      <h1>Résultats — Portrait chinois de : ${escapeHtml(subject)}</h1>
       <div class="notice">
-        <div><b>Auto-évaluation</b> + <b>3 regards</b> : l’objectif est d’obtenir un portrait plus fiable, en croisant le vécu intérieur et le regard de l’entourage.</div>
-        <div class="small">Rappel : ce n’est pas un jugement. C’est une photographie du moment présent.</div>
+        <div><b>Rappel :</b> ce n’est pas un jugement. C’est une photographie du moment présent.</div>
       </div>
+
       <div class="btnrow">
         <a class="btn primary" href="questionnaire-auto.html">Auto-évaluation</a>
         <a class="btn" href="questionnaire-regard1.html">Regard 1</a>
@@ -512,40 +638,82 @@ function mountResults(){
       <h2>État de complétion</h2>
       <table class="table">
         <thead><tr><th>Questionnaire</th><th>Évaluateur</th><th>Statut</th></tr></thead>
-        <tbody>
-          ${payloads.map(p=>{
-            const label = p.form==="auto" ? "Auto-évaluation" : `Regard ${p.form.replace("regard","")}`;
-            const who = p.form==="auto" ? "Auto-évaluation" : (p.evaluator || "—");
-            const st = p.complete ? "Complet (30/30)" : `Incomplet (${p.totalPoints}/30)`;
-            return `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(who)}</td><td>${escapeHtml(st)}</td></tr>`;
-          }).join("")}
-        </tbody>
+        <tbody>${completionRows}</tbody>
+      </table>
+      <div class="small">Si un regard est incomplet, ses scores ne doivent pas être sur-interprétés.</div>
+    </div>
+
+    <div class="card">
+      <h2>Totaux par grands chapitres</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Agir</th>
+            <th>Auto</th>
+            <th>Regard 1</th>
+            <th>Regard 2</th>
+            <th>Regard 3</th>
+            <th>Moyenne regards</th>
+          </tr>
+        </thead>
+        <tbody>${totalsTableRows}</tbody>
       </table>
     </div>
 
-    ${auto.complete ? interpretationCard("Lecture – Auto-évaluation", auto.rank) :
-      `<div class="warn">Auto-évaluation incomplète : complète d’abord l’auto-évaluation (30 points) pour activer la lecture.</div>`}
+    ${interpretationText(rankAvg)}
 
-    ${regards.length ? interpretationCard(`Lecture – Moyenne des regards (${regards.length}/3)`, avgRegards) :
-      `<div class="warn">Aucun regard complet pour l’instant : termine au moins 1 questionnaire “regard” (30 points) pour activer la moyenne.</div>`}
+    <div class="card">
+      <h2>Classement (lecture rapide)</h2>
+      <div class="grid two">
+        <div class="kpi">
+          <div class="kpititle">Auto-évaluation</div>
+          ${rankAuto.map(r => `
+            <div class="kpirow">
+              <div><b>${escapeHtml(r.label)}</b></div>
+              <div class="right"><b>${r.score}</b></div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="kpi">
+          <div class="kpititle">Moyenne des regards</div>
+          ${rankAvg.map(r => `
+            <div class="kpirow">
+              <div><b>${escapeHtml(r.label)}</b></div>
+              <div class="right"><b>${r.score}</b></div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </div>
 
-    ${buildComparisonCard(payloads)}
+    ${detailSection("feu")}
+    ${detailSection("terre")}
+    ${detailSection("metal")}
+    ${detailSection("eau")}
+    ${detailSection("bois")}
+
+    <div class="card">
+      <div class="small">Données stockées localement dans ton navigateur (localStorage). Rien n’est envoyé sur Internet.</div>
+    </div>
   `;
-
-  const copyBtn = $("copyGlobal");
-  if(copyBtn){
-    copyBtn.addEventListener("click", async ()=>{
-      const text = buildGlobalSummary(payloads);
-      await navigator.clipboard.writeText(text);
-      alert("Résumé copié.");
-    });
-  }
 }
 
-/* ---------- Boot ---------- */
+/* ------------------- Pages Intro/Dynamiques ------------------- */
 
-document.addEventListener("DOMContentLoaded", ()=>{
+function mountDynamicPageFixes() {
+  // Juste pour sécuriser les boutons si tu utilises des liens “btn”
+  // Rien de bloquant ici : si ça ne trouve rien, ça ne fait rien.
+  const btnToQuestionnaire = document.querySelectorAll('[data-go="questionnaire"]');
+  btnToQuestionnaire.forEach(b => {
+    b.addEventListener("click", () => (location.href = "questionnaire-auto.html"));
+  });
+}
+
+/* ------------------------- Boot -------------------------- */
+
+document.addEventListener("DOMContentLoaded", () => {
   setActiveNav();
   mountQuestionnaire();
   mountResults();
+  mountDynamicPageFixes();
 });
