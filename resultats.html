@@ -2,442 +2,52 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Résultats détaillés — Portrait chinois (30 points)</title>
-  <style>
-    :root{
-      --bg:#fbf5ea; /* sable chaud */
-      --paper:#ffffff;
-      --ink:#1f2937;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --chip:#f3e7cf;
-      --accent:#a4743a;
-    }
-    html,body{height:100%}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--ink);
-      font:14px/1.35 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    }
-    .wrap{max-width:1100px;margin:24px auto;padding:0 16px;}
-    .paper{
-      background:var(--paper);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:22px;
-      box-shadow:0 10px 30px rgba(0,0,0,.06);
-    }
-    h1{margin:0 0 10px;font-size:22px}
-    .meta{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px}
-    .chip{
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      background:var(--chip);
-      border:1px solid #ead9bd;
-      border-radius:999px;
-      padding:6px 10px;
-      color:#5b3b18;
-      font-weight:600;
-      font-size:12px;
-    }
-    .muted{color:var(--muted)}
-    .note{
-      margin:10px 0 16px;
-      padding:10px 12px;
-      border:1px dashed #e6d4b7;
-      background:#fff7e8;
-      border-radius:10px;
-    }
-    .warn{
-      margin:14px 0 0;
-      padding:12px;
-      border:1px solid #f2c6c6;
-      background:#fff1f1;
-      border-radius:10px;
-      color:#7a1f1f;
-      font-weight:600;
-    }
-    table{width:100%;border-collapse:collapse;margin:10px 0 18px}
-    th,td{border:1px solid var(--line);padding:8px 10px;vertical-align:top}
-    th{background:#fafafa;text-align:left;font-size:12px;color:#374151}
-    td.num, th.num{text-align:center;width:86px;white-space:nowrap}
-    td.total{font-weight:700}
-    .secTitle{
-      margin:18px 0 6px;
-      font-size:16px;
-      display:flex;
-      justify-content:space-between;
-      align-items:baseline;
-      gap:10px;
-    }
-    .secTitle span{color:var(--accent);font-weight:800}
-    .sub{font-size:12px;color:var(--muted);margin:0 0 8px}
-    .footer{
-      margin-top:14px;
-      padding-top:12px;
-      border-top:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      color:var(--muted);
-      font-size:12px;
-    }
-    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
-    .btn{
-      border:1px solid #e6d4b7;
-      background:#fff7e8;
-      color:#5b3b18;
-      border-radius:10px;
-      padding:8px 10px;
-      font-weight:700;
-      cursor:pointer;
-    }
-    .btn.primary{
-      border-color:#d9c1a1;
-      background:#f3e7cf;
-      color:#5b3b18;
-    }
-    .right{margin-left:auto}
-
-    /* Impression PDF */
-    @media print{
-      body{background:#fff}
-      .wrap{max-width:none;margin:0;padding:0}
-      .paper{border:none;border-radius:0;box-shadow:none;padding:0}
-      .btnRow{display:none}
-      a{color:inherit;text-decoration:none}
-      @page{size:A4; margin:12mm;}
-      h1{font-size:18px}
-      th,td{padding:6px 7px}
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>5 Agir – Résultats</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="paper">
-      <h1>Résultats détaillés — Portrait chinois (30 points)</h1>
-      <div class="meta">
-        <div class="chip" id="who">Portrait chinois de : —</div>
-        <div class="chip" id="date">Date : —</div>
-        <div class="chip" id="eval">Évaluateur : —</div>
-        <div class="chip" id="totals">Auto 0/30 · R1 0/30 · R2 0/30 · R3 0/30</div>
+  <div class="container">
+    <div class="nav">
+      <div class="brand">5 Agir <span class="badge">Résultats</span></div>
+      <div class="links">
+        <a data-nav href="index.html">Introduction</a>
+        <a data-nav href="dynamiques.html">Dynamiques</a>
+        <a data-nav href="questionnaire-auto.html">Auto</a>
+        <a data-nav href="questionnaire-regard1.html">Regard 1</a>
+        <a data-nav href="questionnaire-regard2.html">Regard 2</a>
+        <a data-nav href="questionnaire-regard3.html">Regard 3</a>
+        <a data-nav href="resultats.html">Résultats</a>
       </div>
+    </div>
 
-      <div class="note">
-        <div><b>Note importante.</b> Ces résultats sont une photographie générique. La lecture fine (nuances, contextes, complémentarités, zones à sécuriser) se fait en échange, en séance, avec ton mentor préféré <b>Jean-Luc D.</b>.</div>
-        <div class="muted" style="margin-top:6px;">Conseil : ne cherche pas l’“équilibre idéal”. Note ce qui est vrai aujourd’hui. On interprète ensuite.</div>
+    <div class="hero">
+      <h1>Résultats</h1>
+      <p>Cette restitution est volontairement synthétique. Elle donne une lecture générique des tendances. L’analyse fine (contexte, nuances, impacts sur les rôles et les décisions) se fait ensuite en échange avec ton mentor préféré Jean-Luc D.</p>
+      <div class="btnrow">
+        <a class="btn" href="questionnaire-auto.html">Compléter l’auto-évaluation</a>
+        <a class="btn" href="questionnaire-regard1.html">Inviter un regard</a>
       </div>
+      <div class="footer">Données stockées localement dans ton navigateur. Rien n’est envoyé sur Internet.</div>
+    </div>
 
-      <div class="btnRow">
-        <button class="btn primary" onclick="window.print()">Exporter en PDF (Cmd+P)</button>
-        <button class="btn" id="copy">Copier le tableau (texte)</button>
-        <a class="btn right" href="resultats.html">Retour à Résultats</a>
+    <div id="results"></div>
+
+    <div class="card">
+      <h2>Export PDF</h2>
+      <p>Pour exporter : ouvre cette page, puis “Imprimer” et choisis “Enregistrer en PDF”. Sur Mac : Cmd+P. Sur iPhone : bouton Partager → Imprimer → pincer pour ouvrir l’aperçu → Partager → Enregistrer dans Fichiers.</p>
+      <div class="btnrow">
+        <button class="btn" onclick="window.print()">Imprimer / PDF</button>
+        <a class="btn" href="resultats-detail.html">Version détaillée (si disponible)</a>
       </div>
+    </div>
 
-      <div id="content"></div>
-      <div id="warn" class="warn" style="display:none;"></div>
-
-      <div class="footer">
-        <div>Données stockées localement dans ton navigateur (localStorage). Rien n’est envoyé sur Internet.</div>
-        <div class="muted">Fichier : resultats-detail.html</div>
-      </div>
+    <div class="card">
+      <h2>Comment me transmettre vos résultats</h2>
+      <p>Si tu veux me les envoyer, utilise le bouton “Copier un résumé” sur la restitution (si présent). Colle le texte dans un email ou un message. Pour un travail plus complet, exporte le PDF.</p>
     </div>
   </div>
-
-<script>
-/* =========================
-   CONFIG (doit coller à ton app.js)
-   ========================= */
-const STORAGE_KEYS = [
-  "jld_5elements_v1",
-  "jld_5agir_v1",
-  "jld_5agir",
-  "five_elements_v1"
-];
-
-// 30 formules officielles (Auto)
-const PHRASES = [
-  { id: 1,  element: "feu",   text: "Je suis optimiste." },
-  { id: 2,  element: "feu",   text: "Je suis à l’aise à l’oral." },
-  { id: 3,  element: "feu",   text: "Je suis attentif(ve) au collectif." },
-  { id: 4,  element: "feu",   text: "Je suis à l’aise pour me mettre en avant." },
-  { id: 5,  element: "feu",   text: "J’insuffle de l’énergie autour de moi." },
-  { id: 6,  element: "feu",   text: "Je suis à l’écoute des autres." },
-
-  { id: 7,  element: "terre", text: "Je suis bienveillant(e)." },
-  { id: 8,  element: "terre", text: "Je suis empathique." },
-  { id: 9,  element: "terre", text: "Je suis capable de faire le lien entre les personnes." },
-  { id: 10, element: "terre", text: "Je suis pragmatique." },
-  { id: 11, element: "terre", text: "Je suis juste." },
-  { id: 12, element: "terre", text: "J’aime transmettre." },
-
-  { id: 13, element: "metal", text: "Je suis rigoureux / rigoureuse." },
-  { id: 14, element: "metal", text: "Je suis rationnel(le)." },
-  { id: 15, element: "metal", text: "Je suis analytique." },
-  { id: 16, element: "metal", text: "Je suis attentif(ve) aux détails." },
-  { id: 17, element: "metal", text: "Je suis objectif(ve)." },
-  { id: 18, element: "metal", text: "Je suis réaliste." },
-
-  { id: 19, element: "eau",   text: "Je suis patient(e)." },
-  { id: 20, element: "eau",   text: "Je suis discret(e)." },
-  { id: 21, element: "eau",   text: "Je suis fidèle à mes principes." },
-  { id: 22, element: "eau",   text: "Je suis prudent(e)." },
-  { id: 23, element: "eau",   text: "Je suis capable de prendre du recul." },
-  { id: 24, element: "eau",   text: "Je capitalise pour durer." },
-
-  { id: 25, element: "bois",  text: "Je suis orienté(e) action." },
-  { id: 26, element: "bois",  text: "Je suis audacieux / audacieuse." },
-  { id: 27, element: "bois",  text: "Je suis efficace." },
-  { id: 28, element: "bois",  text: "Je suis tenace." },
-  { id: 29, element: "bois",  text: "Je suis créatif / créative." },
-  { id: 30, element: "bois",  text: "Je suis impatient(e)." }
-];
-
-const CHAPTERS = [
-  { key:"feu",   title:"FEU",   subtitle:"relation, expression, énergie, rayonnement" },
-  { key:"terre", title:"TERRE", subtitle:"lien, stabilité, régulation, cohésion" },
-  { key:"metal", title:"MÉTAL", subtitle:"structure, exigence, discernement, cadre" },
-  { key:"eau",   title:"EAU",   subtitle:"profondeur, temps long, fondations, sens" },
-  { key:"bois",  title:"BOIS",  subtitle:"élan, action, mouvement, conquête" }
-];
-
-/* =========================
-   UTILS
-   ========================= */
-function escapeHtml(s){
-  return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-}
-function formatDate(d){
-  try{
-    const dt = new Date(d);
-    if(!isNaN(dt.getTime())) return dt.toLocaleDateString("fr-FR");
-  }catch(e){}
-  return "—";
-}
-
-function loadRawState(){
-  for(const k of STORAGE_KEYS){
-    const v = localStorage.getItem(k);
-    if(!v) continue;
-    try{ return { key:k, state: JSON.parse(v) }; }catch(e){}
-  }
-  // fallback : chercher un objet ressemblant
-  for(let i=0;i<localStorage.length;i++){
-    const k = localStorage.key(i);
-    const v = localStorage.getItem(k);
-    if(!v) continue;
-    try{
-      const obj = JSON.parse(v);
-      if(obj && typeof obj === "object" && (obj.answers || obj.meta || obj.forms)) return { key:k, state: obj };
-    }catch(e){}
-  }
-  return { key:null, state:null };
-}
-
-// récupère des réponses de façon tolérante (selon versions)
-function getAnswers(state, formKey){
-  if(!state) return null;
-
-  // cas 1 : state.answers = { auto:{}, regard1:{}, ... }
-  if(state.answers && state.answers[formKey]) return state.answers[formKey];
-
-  // cas 2 : state.forms = { auto:{answers:{}}, ... }
-  if(state.forms && state.forms[formKey] && state.forms[formKey].answers) return state.forms[formKey].answers;
-
-  // cas 3 : state.autoAnswers / state.regard1Answers etc
-  const camel = formKey.charAt(0).toUpperCase() + formKey.slice(1);
-  if(state[formKey] && typeof state[formKey] === "object" && state[formKey].answers) return state[formKey].answers;
-  if(state[formKey + "Answers"]) return state[formKey + "Answers"];
-  if(state["answers" + camel]) return state["answers" + camel];
-
-  // cas 4 : aplati (rare) => on ne peut pas distinguer
-  return null;
-}
-
-function getMeta(state){
-  if(!state) return {};
-  if(state.meta) return state.meta;
-  if(state.forms && state.forms.auto && state.forms.auto.meta) return state.forms.auto.meta;
-  return {};
-}
-
-function scoreFor(answers, id){
-  if(!answers) return 0;
-  // on tolère plusieurs formats : { "1":2 } ou { 1:2 } ou { p1:2 } etc.
-  if(answers[id] != null) return Number(answers[id]) || 0;
-  if(answers[String(id)] != null) return Number(answers[String(id)]) || 0;
-  const alt = "p" + id;
-  if(answers[alt] != null) return Number(answers[alt]) || 0;
-  return 0;
-}
-
-function sumForm(answers){
-  let t = 0;
-  for(const p of PHRASES) t += scoreFor(answers, p.id);
-  return t;
-}
-
-// conversion Auto -> Regard (Je -> Il/Elle)
-function toThirdPersonFR(s){
-  let out = String(s).trim();
-  out = out.replace(/^Je suis\b/i, "Il/Elle est");
-  out = out.replace(/^J’aime\b/i, "Il/Elle aime");
-  out = out.replace(/^J'insuffle\b/i, "Il/Elle insuffle");
-  out = out.replace(/^J’insuffle\b/i, "Il/Elle insuffle");
-  out = out.replace(/^Je capitalise\b/i, "Il/Elle capitalise");
-  out = out.replace(/\bautour de moi\b/gi, "autour de lui/d’elle");
-  if(!out.endsWith(".")) out += ".";
-  return out;
-}
-
-/* =========================
-   RENDER
-   ========================= */
-function render(){
-  const { key, state } = loadRawState();
-  const warn = document.getElementById("warn");
-  const content = document.getElementById("content");
-
-  if(!state){
-    warn.style.display = "block";
-    warn.textContent = "Aucune donnée trouvée. Remplis d’abord l’auto-évaluation (et/ou les regards), puis reviens sur cette page.";
-    content.innerHTML = "";
-    return;
-  }
-
-  const meta = getMeta(state);
-  const who = meta.who || meta.portraitOf || meta.name || meta.targetName || "—";
-  const evaluator = meta.evaluator || meta.by || meta.evaluatorName || "—";
-  const createdAt = meta.createdAt || meta.date || meta.updatedAt || state.createdAt || state.updatedAt || null;
-
-  document.getElementById("who").textContent = "Portrait chinois de : " + who;
-  document.getElementById("eval").textContent = "Évaluateur : " + evaluator;
-  document.getElementById("date").textContent = "Date : " + (createdAt ? formatDate(createdAt) : "—");
-
-  const aAuto = getAnswers(state, "auto");
-  const aR1   = getAnswers(state, "regard1");
-  const aR2   = getAnswers(state, "regard2");
-  const aR3   = getAnswers(state, "regard3");
-
-  const tAuto = sumForm(aAuto);
-  const tR1 = sumForm(aR1);
-  const tR2 = sumForm(aR2);
-  const tR3 = sumForm(aR3);
-
-  document.getElementById("totals").textContent =
-    `Auto ${tAuto}/30 · R1 ${tR1}/30 · R2 ${tR2}/30 · R3 ${tR3}/30`;
-
-  // Avertissements doux (sans trop expliquer)
-  const missing = [];
-  if(!aAuto) missing.push("Auto");
-  if(!aR1) missing.push("R1");
-  if(!aR2) missing.push("R2");
-  if(!aR3) missing.push("R3");
-
-  if(missing.length){
-    warn.style.display = "block";
-    warn.textContent = `Attention : données manquantes pour ${missing.join(", ")}. Le tableau affiche quand même ce qui est disponible.`;
-  }else{
-    warn.style.display = "none";
-  }
-
-  // Construction par chapitres
-  let html = "";
-  for(const chap of CHAPTERS){
-    const items = PHRASES.filter(p => p.element === chap.key);
-    const sumAuto = items.reduce((acc,p)=>acc+scoreFor(aAuto,p.id),0);
-    const sumR1 = items.reduce((acc,p)=>acc+scoreFor(aR1,p.id),0);
-    const sumR2 = items.reduce((acc,p)=>acc+scoreFor(aR2,p.id),0);
-    const sumR3 = items.reduce((acc,p)=>acc+scoreFor(aR3,p.id),0);
-
-    html += `
-      <div class="secTitle">
-        <div><span>${escapeHtml(chap.title)}</span> <span class="muted">— ${escapeHtml(chap.subtitle)}</span></div>
-        <div class="muted">Auto ${sumAuto} · R1 ${sumR1} · R2 ${sumR2} · R3 ${sumR3}</div>
-      </div>
-      <div class="sub">Chaque ligne : Auto + 3 regards + total.</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Formule (auto)</th>
-            <th class="num">Auto</th>
-            <th class="num">Regard 1</th>
-            <th class="num">Regard 2</th>
-            <th class="num">Regard 3</th>
-            <th class="num">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${items.map(p=>{
-            const sAuto = scoreFor(aAuto,p.id);
-            const s1 = scoreFor(aR1,p.id);
-            const s2 = scoreFor(aR2,p.id);
-            const s3 = scoreFor(aR3,p.id);
-            const total = sAuto + s1 + s2 + s3;
-            return `
-              <tr>
-                <td>
-                  <div><b>${escapeHtml(p.text)}</b></div>
-                  <div class="muted">Regard : ${escapeHtml(toThirdPersonFR(p.text))}</div>
-                </td>
-                <td class="num">${sAuto}</td>
-                <td class="num">${s1}</td>
-                <td class="num">${s2}</td>
-                <td class="num">${s3}</td>
-                <td class="num total">${total}</td>
-              </tr>
-            `;
-          }).join("")}
-        </tbody>
-      </table>
-    `;
-  }
-
-  // Totaux globaux
-  const global = `
-    <div class="secTitle" style="margin-top:6px;">
-      <div><span>Totaux globaux</span> <span class="muted">— vérification</span></div>
-      <div class="muted">Auto ${tAuto}/30 · R1 ${tR1}/30 · R2 ${tR2}/30 · R3 ${tR3}/30</div>
-    </div>
-  `;
-
-  content.innerHTML = global + html;
-
-  // Copier un résumé texte (pour coller dans tes notes)
-  const copyBtn = document.getElementById("copy");
-  if(copyBtn){
-    copyBtn.addEventListener("click", async ()=>{
-      const lines = [];
-      lines.push(`Portrait chinois de : ${who}`);
-      lines.push(`Date : ${createdAt ? formatDate(createdAt) : "—"}`);
-      lines.push(`Évaluateur : ${evaluator}`);
-      lines.push(`Totaux : Auto ${tAuto}/30 · R1 ${tR1}/30 · R2 ${tR2}/30 · R3 ${tR3}/30`);
-      lines.push("");
-      for(const chap of CHAPTERS){
-        lines.push(`${chap.title} — ${chap.subtitle}`);
-        const items = PHRASES.filter(p => p.element === chap.key);
-        for(const p of items){
-          const sAuto = scoreFor(aAuto,p.id), s1 = scoreFor(aR1,p.id), s2 = scoreFor(aR2,p.id), s3 = scoreFor(aR3,p.id);
-          lines.push(`${p.id}. ${p.text} | Auto ${sAuto} | R1 ${s1} | R2 ${s2} | R3 ${s3} | Total ${sAuto+s1+s2+s3}`);
-        }
-        lines.push("");
-      }
-      const txt = lines.join("\n");
-      try{
-        await navigator.clipboard.writeText(txt);
-        alert("Résumé copié.");
-      }catch(e){
-        alert("Impossible de copier automatiquement. Sélectionne puis copie manuellement.");
-      }
-    });
-  }
-}
-
-document.addEventListener("DOMContentLoaded", render);
-</script>
 </body>
 </html>
