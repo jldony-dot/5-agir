@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
   <script defer src="app.js"></script>
 </head>
+
 <body data-form="auto">
   <div class="container">
     <div class="nav">
@@ -23,48 +24,50 @@
     </div>
 
     <div class="hero">
-      <h1>Portrait chinois – Auto-évaluation.</h1>
+      <h1>Portrait chinois – Auto-évaluation</h1>
+      <p>Ce questionnaire n’est ni un test, ni une évaluation, ni un jugement. C’est une photographie de ton fonctionnement aujourd’hui.</p>
       <p>Lis chaque phrase comme si tu te la disais intérieurement. Si ça te ressemble, mets des points. Si ça ne te ressemble pas, n’en mets pas.</p>
-      <p>Réponds sans suranalyser, sans chercher l’image idéale. Ce qui compte ici, c’est la justesse.</p>
+      <p>Réponds sans suranalyser, sans chercher l’image idéale. Ce qui m’intéresse, c’est la justesse.</p>
 
       <hr>
 
-      <h2>Champs.</h2>
-      <div class="grid two mt">
+      <h2>Champs</h2>
+      <div class="grid two" style="margin-top:10px">
         <div>
-          <label>Portrait chinois de :</label>
-          <input id="subject" class="input" placeholder="Prénom (ou Prénom Nom)" />
+          <label>Portrait chinois de :</label><br>
+          <input id="subject" placeholder="Prénom (ou Prénom Nom)" style="width:100%" />
           <div class="small">Ce nom sera réutilisé dans les questionnaires “regard”.</div>
         </div>
         <div>
-          <label>Évaluation réalisée par :</label>
-          <input id="evaluator" class="input" value="Auto-évaluation" disabled />
+          <label>Évaluation réalisée par :</label><br>
+          <input id="evaluator" value="Auto-évaluation" disabled style="width:100%" />
           <div class="small">L’évaluateur est implicite ici.</div>
         </div>
       </div>
 
-      <div class="grid two mt">
+      <div class="grid two" style="margin-top:14px">
         <div class="kpi">
           <div><b>Progression</b><span id="progressText">0 / 30 points</span></div>
-          <div style="min-width:220px; width:100%"><progress id="progress" value="0" max="30"></progress></div>
+          <div style="min-width:220px"><progress id="progress" value="0" max="30"></progress></div>
         </div>
         <div class="kpi">
-          <div><b>Règle</b><span class="small">Total strict</span></div>
+          <div><b>Règle</b><span>Total strict</span></div>
           <div><b>30</b> / 30</div>
+          <div class="small">Max 5 points par phrase.</div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>Répartition des points.</h2>
+      <h2>Répartition des points</h2>
       <div class="small">Attribue entre 0 et 5 points à chaque phrase. La somme doit faire exactement 30.</div>
-      <div id="questionnaire" class="mt"></div>
+      <div id="questionnaire"></div>
     </div>
 
     <div class="card">
       <div id="totalWarn" class="warn">Le total doit faire exactement 30.</div>
       <div class="btnrow">
-        <button id="goResults" class="btn primary" disabled>Voir les résultats</button>
+        <a id="goResults" class="btn primary" href="resultats.html">Voir les résultats</a>
         <button id="reset" class="btn danger" type="button">Réinitialiser</button>
       </div>
       <div class="footer">Conseil : note ce qui est vrai aujourd’hui, pas ce que tu voudrais être.</div>
