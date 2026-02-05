@@ -1,15 +1,12 @@
 /* =========================================================
-   5 AGIR — app.js (version robuste, clés unifiées, multi-pages)
-   - Auto-évaluation + Regard 1/2/3
-   - 30 phrases, total strict = 30, max 5 par phrase
-   - Questionnaire neutre (pas d’éléments visibles), ordre mélangé
-   - Résultats par éléments (Feu/Terre/Métal/Eau/Bois) + détail
-   - Stockage local (localStorage) — rien n’est envoyé sur Internet
+   5 AGIR — app.js (propre, stable, 100% local)
+   - Auto + 3 regards
+   - 30 phrases, 0–5, total strict = 30
+   - Ordre mélangé mais stable par questionnaire
+   - Stockage localStorage (rien n’est envoyé)
    ========================================================= */
 
-/* ------------------------- Config ------------------------- */
-
-const VERSION = "v2"; // CHANGE ICI si tu veux réinitialiser tout (v3, v4, ...)
+const VERSION = "v2";
 const MAX_PER_ITEM = 5;
 const TOTAL_REQUIRED = 30;
 
@@ -28,14 +25,14 @@ const ELEMENTS = [
   { key: "bois", label: "Bois" },
 ];
 
-// 30 formules figées (mémoire)
+// 30 formules figées
 const ITEMS = [
   // FEU (1-6)
   { id: 1, element: "feu", self: "Je suis optimiste." },
   { id: 2, element: "feu", self: "Je suis à l’aise à l’oral." },
   { id: 3, element: "feu", self: "Je suis attentif(ve) au collectif." },
   { id: 4, element: "feu", self: "Je suis à l’aise pour me mettre en avant." },
-  { id: 5, element: "feu", self: "J’insuffle de l’énergie autour de moi." },
+  { id: 5, element: "feu", self: "J’insuffle de l’enthousiasme autour de moi." },
   { id: 6, element: "feu", self: "Je suis à l’écoute des autres." },
 
   // TERRE (7-12)
@@ -113,15 +110,24 @@ function safeStorageSet(key, value) {
   }
 }
 
+function safeStorageRemove(key) {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function defaultState() {
   return {
     meta: {
-      subject: "",     // Portrait chinois de :
-      evaluator: "",   // Évaluation réalisée par :
+      subject: "",
+      evaluator: "",
       updatedAt: 0,
     },
-    order: [],         // ordre mélangé des 30 items
-    answers: {},       // { [itemId]: number }
+    order: [],
+    answers: {},
   };
 }
 
@@ -130,7 +136,6 @@ function loadState(formKey) {
   if (!raw) return defaultState();
   try {
     const parsed = JSON.parse(raw);
-    // Normalisation légère pour éviter les états cassés
     const s = defaultState();
     if (parsed && typeof parsed === "object") {
       s.meta = { ...s.meta, ...(parsed.meta || {}) };
@@ -158,6 +163,10 @@ function inferFormKey() {
   return null;
 }
 
+function formLabel(formKey) {
+  return (FORMS.find(f => f.key === formKey)?.label) || formKey;
+}
+
 function ensureOrder(state) {
   const ids = ITEMS.map(i => i.id);
   const valid = new Set(ids);
@@ -168,7 +177,6 @@ function ensureOrder(state) {
 
   if (hasAll) return state.order;
 
-  // On mélange une fois et on stocke (stable pour l’utilisateur)
   const shuffled = [...ids];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -209,33 +217,22 @@ function averageTotals(listOfTotals) {
   return out;
 }
 
-// Transforme une phrase en “Il/Elle …” pour les Regards
 function selfToOther(s) {
   let out = String(s ?? "").trim();
-
-  // Nettoyage ponctuation
   if (!out.endsWith(".")) out += ".";
-
-  // Remplacements spécifiques (ton cas)
   out = out.replace(/\bautour de moi\b/gi, "autour de lui/elle");
-
-  // Départs de phrase
   out = out.replace(/^Je suis\b/i, "Il/Elle est");
   out = out.replace(/^J’/i, "Il/Elle ");
   out = out.replace(/^J'/i, "Il/Elle ");
   out = out.replace(/^J’aime\b/i, "Il/Elle aime");
   out = out.replace(/^J'aime\b/i, "Il/Elle aime");
   out = out.replace(/^Je\b/i, "Il/Elle");
-
-  // Petites corrections (évite “Il/Elle suis” si collages bizarres)
   out = out.replace(/\bIl\/Elle suis\b/gi, "Il/Elle est");
-
   return out;
 }
 
 function textForForm(item, formKey) {
-  if (formKey === "auto") return item.self;
-  return selfToOther(item.self);
+  return formKey === "auto" ? item.self : selfToOther(item.self);
 }
 
 function setActiveNav() {
@@ -248,149 +245,48 @@ function setActiveNav() {
   });
 }
 
-/* ------------------- Questionnaire UI -------------------- */
-
-function questionnaireIntroHtml(formKey) {
-  if (formKey === "auto") {
-    return `
-      <div class="card">
-        <h1>Portrait chinois – Auto-évaluation</h1>
-        <p>Ce questionnaire n’est ni un test, ni une évaluation, ni un jugement. C’est une photographie de ton fonctionnement aujourd’hui.</p>
-        <p>Lis chaque phrase comme si tu te la disais intérieurement. Si ça te ressemble, mets des points. Si ça ne te ressemble pas, n’en mets pas.</p>
-        <p>Réponds sans suranalyser, sans chercher l’image idéale. Ce qui m’intéresse, c’est la justesse.</p>
-      </div>
-    `;
-  }
-  return `
-    <div class="card">
-      <h1>Portrait chinois – ${escapeHtml(formLabel(formKey))}</h1>
-      <p>Tu vas évaluer une personne que tu connais bien. Ce questionnaire n’est ni un jugement, ni une note de performance.</p>
-      <p>Lis chaque phrase et demande-toi : <b>“Est-ce que cela décrit bien sa manière d’agir aujourd’hui ?”</b></p>
-      <p>Réponds sans chercher l’équilibre ou l’image idéale. Appuie-toi sur ton expérience réelle de la personne.</p>
-    </div>
-  `;
-}
-
-function formLabel(formKey) {
-  return (FORMS.find(f => f.key === formKey)?.label) || formKey;
-}
+/* ------------------- Questionnaire -------------------- */
 
 function mountQuestionnaire() {
-  const root = $("questionnaire");
-  if (!root) return;
+  const listRoot = $("questionnaire");
+  if (!listRoot) return;
 
-  const formKey = inferFormKey() || root.getAttribute("data-form") || "auto";
+  const formKey = document.body?.dataset?.form || inferFormKey() || "auto";
   const formCfg = FORMS.find(f => f.key === formKey) || FORMS[0];
 
-  // Charge état
   const state = loadState(formKey);
   const order = ensureOrder(state);
 
-  // Pré-remplissage du sujet depuis auto (pour les regards)
+  // Préremplissage du sujet depuis auto pour les regards
   if (formKey !== "auto") {
     const auto = loadState("auto");
     const autoSubject = (auto.meta?.subject || "").trim();
     if (autoSubject && !(state.meta?.subject || "").trim()) {
       state.meta.subject = autoSubject;
-      saveState(formKey, state);
     }
   }
 
   // Evaluateur fixé pour auto
   if (formCfg.evaluatorFixed) {
     state.meta.evaluator = formCfg.evaluatorFixed;
-    saveState(formKey, state);
   }
 
-  // Rendu
-  root.innerHTML = `
-    ${questionnaireIntroHtml(formKey)}
-
-    <div class="card">
-      <h2>Champs</h2>
-      <div class="grid two">
-        <div>
-          <label class="label">Portrait chinois de :</label>
-          <input id="subject" class="input" placeholder="Prénom (ou Prénom Nom)" value="${escapeHtml(state.meta.subject || "")}" />
-          <div class="small">Ce nom sera réutilisé dans les questionnaires “regard”.</div>
-        </div>
-        <div>
-          <label class="label">Évaluation réalisée par :</label>
-          <input id="evaluator" class="input" placeholder="Ton prénom" value="${escapeHtml(state.meta.evaluator || "")}" ${formCfg.evaluatorFixed ? "disabled" : ""}/>
-          <div class="small">Ce nom apparaîtra dans la synthèse finale.</div>
-        </div>
-      </div>
-
-      <div class="grid two mt">
-        <div class="pillbox">
-          <div class="pilltitle">Progression</div>
-          <div class="pillvalue"><span id="progressVal">0</span> / ${TOTAL_REQUIRED} points</div>
-          <div class="bar"><div id="barFill" class="barfill" style="width:0%"></div></div>
-        </div>
-        <div class="pillbox">
-          <div class="pilltitle">Règle</div>
-          <div class="pillvalue">Total strict <span id="totalStrict">0</span> / ${TOTAL_REQUIRED}</div>
-          <div class="small">Max ${MAX_PER_ITEM} points par phrase.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Répartition des points</h2>
-      <div class="small">Attribue entre 0 et ${MAX_PER_ITEM} points à chaque phrase. La somme doit faire exactement ${TOTAL_REQUIRED}.</div>
-      <div id="list" class="list mt"></div>
-    </div>
-
-    <div class="card">
-      <div id="alert" class="warn" style="display:none"></div>
-      <div class="btnrow">
-        <a id="goResults" class="btn primary" href="resultats.html">Voir les résultats</a>
-        <button id="reset" class="btn" type="button">Réinitialiser</button>
-      </div>
-      <div class="small mt">Conseil : note ce qui est vrai aujourd’hui, pas ce que tu voudrais être / voir.</div>
-    </div>
-  `;
-
-  // DOM refs
+  // Champs et UI présents dans la page
   const subjectEl = $("subject");
-  const evaluatorEl = $("evaluator");
-  const listEl = $("list");
-  const progressVal = $("progressVal");
-  const totalStrict = $("totalStrict");
-  const barFill = $("barFill");
-  const alertEl = $("alert");
-  const goResults = $("goResults");
+  const evaluatorEl = $("evaluator"); // présent sur regards, présent (disabled) sur auto
+  const progressEl = $("progress");
+  const progressText = $("progressText");
+  const warnEl = $("totalWarn");
+  const goBtn = $("goResults");
   const resetBtn = $("reset");
 
-  // Build list (ordre mélangé, neutre)
-  const rows = order.map((id, idx) => {
-    const it = ITEMS.find(x => x.id === id);
-    const label = textForForm(it, formKey);
-    const v = clampInt(state.answers[id] ?? 0, 0, MAX_PER_ITEM);
-    return `
-      <div class="row">
-        <div class="rowleft">
-          <div class="rowidx">#${idx + 1}</div>
-          <div class="rowtext">${escapeHtml(label)}</div>
-        </div>
-        <div class="rowright">
-          <input class="score" type="number" inputmode="numeric" min="0" max="${MAX_PER_ITEM}" step="1"
-                 data-id="${id}" value="${v}" />
-          <div class="hint">0–${MAX_PER_ITEM}</div>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  listEl.innerHTML = rows;
-
   function syncMeta() {
-    state.meta.subject = (subjectEl.value || "").trim();
-    if (!formCfg.evaluatorFixed) state.meta.evaluator = (evaluatorEl.value || "").trim();
+    if (subjectEl) state.meta.subject = (subjectEl.value || "").trim();
+    if (!formCfg.evaluatorFixed && evaluatorEl) state.meta.evaluator = (evaluatorEl.value || "").trim();
 
-    // Si on est sur auto, on répercute le sujet dans les regards si vides
+    // Sur auto, répercute le sujet dans les regards si vides
     if (formKey === "auto") {
-      const subject = state.meta.subject.trim();
+      const subject = (state.meta.subject || "").trim();
       if (subject) {
         for (const fk of ["regard1", "regard2", "regard3"]) {
           const s2 = loadState(fk);
@@ -407,35 +303,57 @@ function mountQuestionnaire() {
 
   function updateUI() {
     const total = sumTotalPoints(state.answers);
-    progressVal.textContent = String(total);
-    totalStrict.textContent = String(total);
 
-    const pct = Math.min(100, Math.round((total / TOTAL_REQUIRED) * 100));
-    barFill.style.width = `${pct}%`;
+    if (progressEl) progressEl.value = total;
+    if (progressText) progressText.textContent = `${total} / ${TOTAL_REQUIRED} points`;
 
-    // Alertes
-    if (total > TOTAL_REQUIRED) {
-      alertEl.style.display = "";
-      alertEl.textContent = `Tu as dépassé ${TOTAL_REQUIRED} points (${total}/${TOTAL_REQUIRED}). Retire ${total - TOTAL_REQUIRED} point(s).`;
-    } else if (total < TOTAL_REQUIRED) {
-      alertEl.style.display = "";
-      alertEl.textContent = `Le total doit faire exactement ${TOTAL_REQUIRED}. Il te manque ${TOTAL_REQUIRED - total} point(s).`;
-    } else {
-      alertEl.style.display = "none";
-      alertEl.textContent = "";
+    if (warnEl) {
+      if (total < TOTAL_REQUIRED) warnEl.textContent = `Le total doit faire exactement ${TOTAL_REQUIRED}.`;
+      if (total > TOTAL_REQUIRED) warnEl.textContent = `Tu as dépassé ${TOTAL_REQUIRED} points (${total}). Retire ${total - TOTAL_REQUIRED} point(s).`;
+      if (total === TOTAL_REQUIRED) warnEl.textContent = `Parfait. Tu peux afficher les résultats.`;
     }
 
-    // Bouton résultats
-    const ok = total === TOTAL_REQUIRED;
-    goResults.classList.toggle("disabled", !ok);
-    goResults.setAttribute("aria-disabled", ok ? "false" : "true");
+    if (goBtn) goBtn.disabled = (total !== TOTAL_REQUIRED);
   }
 
-  // Inputs listeners
-  subjectEl.addEventListener("input", syncMeta);
-  if (!formCfg.evaluatorFixed) evaluatorEl.addEventListener("input", syncMeta);
+  // Initialise champs
+  if (subjectEl && !subjectEl.value) subjectEl.value = state.meta.subject || "";
+  if (evaluatorEl) {
+    if (formCfg.evaluatorFixed) {
+      evaluatorEl.value = formCfg.evaluatorFixed;
+      evaluatorEl.disabled = true;
+    } else {
+      if (!evaluatorEl.value) evaluatorEl.value = state.meta.evaluator || "";
+      evaluatorEl.disabled = false;
+    }
+  }
 
-  listEl.addEventListener("input", (e) => {
+  if (subjectEl) subjectEl.addEventListener("input", () => { syncMeta(); });
+  if (!formCfg.evaluatorFixed && evaluatorEl) evaluatorEl.addEventListener("input", () => { syncMeta(); });
+
+  // Injecte la liste des questions
+  listRoot.innerHTML = order.map((id, idx) => {
+    const it = ITEMS.find(x => x.id === id);
+    const label = textForForm(it, formKey);
+    const v = clampInt(state.answers[id] ?? 0, 0, MAX_PER_ITEM);
+
+    return `
+      <div class="qrow">
+        <div class="qleft">
+          <div class="qidx">#${idx + 1}</div>
+          <div class="qtext">${escapeHtml(label)}</div>
+        </div>
+        <div class="qright">
+          <input class="score" type="number" inputmode="numeric" min="0" max="${MAX_PER_ITEM}" step="1"
+                 data-id="${id}" value="${v}" />
+          <div class="qhint">0–${MAX_PER_ITEM}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Gestion des scores
+  listRoot.addEventListener("input", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLInputElement)) return;
     if (!t.classList.contains("score")) return;
@@ -449,43 +367,45 @@ function mountQuestionnaire() {
     updateUI();
   });
 
-  resetBtn.addEventListener("click", () => {
-    const keepOrder = state.order;
-    const keepMeta = state.meta;
+  // Reset
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      const keepOrder = state.order;
+      const keepMeta = state.meta;
 
-    const fresh = defaultState();
-    fresh.order = keepOrder && keepOrder.length === ITEMS.length ? keepOrder : [];
-    fresh.meta = keepMeta;
+      const fresh = defaultState();
+      fresh.order = keepOrder && keepOrder.length === ITEMS.length ? keepOrder : [];
+      fresh.meta = keepMeta;
 
-    // Auto reset: evaluator fixé
-    if (formCfg.evaluatorFixed) fresh.meta.evaluator = formCfg.evaluatorFixed;
+      if (formCfg.evaluatorFixed) fresh.meta.evaluator = formCfg.evaluatorFixed;
 
-    Object.assign(state, fresh);
-    saveState(formKey, state);
+      Object.assign(state, fresh);
+      saveState(formKey, state);
 
-    // Rafraîchit inputs
-    listEl.querySelectorAll("input.score").forEach(inp => (inp.value = "0"));
-    updateUI();
-  });
-
-  // Empêche d'aller aux résultats si pas OK
-  goResults.addEventListener("click", (e) => {
-    const total = sumTotalPoints(state.answers);
-    if (total !== TOTAL_REQUIRED) {
-      e.preventDefault();
+      listRoot.querySelectorAll("input.score").forEach(inp => (inp.value = "0"));
       updateUI();
-    } else {
-      // Save meta au moment du clic
-      syncMeta();
-    }
-  });
+    });
+  }
 
-  // Init
+  // Go results
+  if (goBtn) {
+    goBtn.addEventListener("click", (e) => {
+      const total = sumTotalPoints(state.answers);
+      if (total !== TOTAL_REQUIRED) {
+        e.preventDefault();
+        updateUI();
+        return;
+      }
+      syncMeta();
+      location.href = "resultats.html";
+    });
+  }
+
   syncMeta();
   updateUI();
 }
 
-/* ---------------------- Résultats UI ---------------------- */
+/* ---------------------- Résultats ---------------------- */
 
 function readFormPayload(formKey) {
   const s = loadState(formKey);
@@ -520,18 +440,22 @@ function rankFromTotals(totals) {
   return arr;
 }
 
-function interpretationText(rank) {
-  // Peu de texte volontairement (tu valorises ton RDV)
-  const top = rank[0]?.label || "";
-  const low = rank[rank.length - 1]?.label || "";
-  return `
-    <div class="card">
-      <h2>Lecture très synthétique</h2>
-      <p>Ce rendu est volontairement générique : il te donne une première lecture des dominantes et des zones à sécuriser, sans “sur-interpréter”.</p>
-      <p><b>Dominante actuelle :</b> ${escapeHtml(top)}. <b>Zone plus faible :</b> ${escapeHtml(low)}.</p>
-      <p class="small">L’analyse fine (nuances, contextes, complémentarités, implications opérationnelles) est clarifiée en séance avec ton mentor préféré Jean-Luc D.</p>
-    </div>
-  `;
+function buildShareText(payloads) {
+  const subject =
+    (payloads.find(p => p.subject)?.subject || "").trim() ||
+    (loadState("auto").meta?.subject || "").trim() ||
+    "—";
+
+  const complete = payloads.filter(p => p.complete);
+  const lines = [];
+  lines.push(`Portrait chinois de : ${subject}`);
+  lines.push(`Questionnaires complets : ${complete.length}/4`);
+  for (const p of complete) {
+    const top = rankFromTotals(p.totals)[0];
+    const low = rankFromTotals(p.totals).slice(-1)[0];
+    lines.push(`- ${p.label} (${p.evaluator || "—"}) : dominante ${top.label} (${top.score}), point bas ${low.label} (${low.score}).`);
+  }
+  return lines.join("\n");
 }
 
 function mountResults() {
@@ -559,7 +483,7 @@ function mountResults() {
     </tr>
   `).join("");
 
-  const totalsTableRows = ELEMENTS.map(e => {
+  const totalsRows = ELEMENTS.map(e => {
     const a = auto.totals[e.key] || 0;
     const r1 = payloads.find(p => p.formKey === "regard1")?.totals?.[e.key] || 0;
     const r2 = payloads.find(p => p.formKey === "regard2")?.totals?.[e.key] || 0;
@@ -578,7 +502,6 @@ function mountResults() {
     `;
   }).join("");
 
-  // Détail par éléments : liste des 30 phrases regroupées en chapitres
   function detailSection(elementKey) {
     const el = ELEMENTS.find(e => e.key === elementKey);
     const list = ITEMS.filter(it => it.element === elementKey);
@@ -602,32 +525,31 @@ function mountResults() {
 
     return `
       <div class="card">
-        <h2>${escapeHtml(el.label)}</h2>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Formule</th>
-              <th>Auto</th>
-              <th>Regard 1</th>
-              <th>Regard 2</th>
-              <th>Regard 3</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <h3>${escapeHtml(el.label)}</h3>
+        <div class="tablewrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Formule</th>
+                <th>Auto</th>
+                <th>Regard 1</th>
+                <th>Regard 2</th>
+                <th>Regard 3</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
       </div>
     `;
   }
 
   root.innerHTML = `
     <div class="card">
-      <h1>Résultats — Portrait chinois de : ${escapeHtml(subject)}</h1>
-      <div class="notice">
-        <div><b>Rappel :</b> ce n’est pas un jugement. C’est une photographie du moment présent.</div>
-      </div>
-
+      <h2>Résultats — Portrait chinois de : ${escapeHtml(subject)}</h2>
+      <p class="muted">Rappel : ce n’est pas un jugement. C’est une photographie du moment présent.</p>
       <div class="btnrow">
-        <a class="btn primary" href="questionnaire-auto.html">Auto-évaluation</a>
+        <a class="btn" href="questionnaire-auto.html">Auto-évaluation</a>
         <a class="btn" href="questionnaire-regard1.html">Regard 1</a>
         <a class="btn" href="questionnaire-regard2.html">Regard 2</a>
         <a class="btn" href="questionnaire-regard3.html">Regard 3</a>
@@ -635,55 +557,63 @@ function mountResults() {
     </div>
 
     <div class="card">
-      <h2>État de complétion</h2>
-      <table class="table">
-        <thead><tr><th>Questionnaire</th><th>Évaluateur</th><th>Statut</th></tr></thead>
-        <tbody>${completionRows}</tbody>
-      </table>
-      <div class="small">Si un regard est incomplet, ses scores ne doivent pas être sur-interprétés.</div>
+      <h3>État de complétion</h3>
+      <div class="tablewrap">
+        <table class="table">
+          <thead><tr><th>Questionnaire</th><th>Évaluateur</th><th>Statut</th></tr></thead>
+          <tbody>${completionRows}</tbody>
+        </table>
+      </div>
+      <p class="muted">La moyenne des regards ne prend en compte que les regards complets.</p>
     </div>
 
     <div class="card">
-      <h2>Totaux par grands chapitres</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Agir</th>
-            <th>Auto</th>
-            <th>Regard 1</th>
-            <th>Regard 2</th>
-            <th>Regard 3</th>
-            <th>Moyenne regards</th>
-          </tr>
-        </thead>
-        <tbody>${totalsTableRows}</tbody>
-      </table>
+      <h3>Totaux par Agir</h3>
+      <div class="tablewrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Agir</th>
+              <th>Auto</th>
+              <th>Regard 1</th>
+              <th>Regard 2</th>
+              <th>Regard 3</th>
+              <th>Moyenne regards</th>
+            </tr>
+          </thead>
+          <tbody>${totalsRows}</tbody>
+        </table>
+      </div>
     </div>
 
-    ${interpretationText(rankAvg)}
-
     <div class="card">
-      <h2>Classement (lecture rapide)</h2>
+      <h3>Classement (lecture rapide)</h3>
       <div class="grid two">
-        <div class="kpi">
+        <div>
           <div class="kpititle">Auto-évaluation</div>
           ${rankAuto.map(r => `
             <div class="kpirow">
-              <div><b>${escapeHtml(r.label)}</b></div>
+              <div>${escapeHtml(r.label)}</div>
               <div class="right"><b>${r.score}</b></div>
             </div>
           `).join("")}
         </div>
-        <div class="kpi">
+        <div>
           <div class="kpititle">Moyenne des regards</div>
           ${rankAvg.map(r => `
             <div class="kpirow">
-              <div><b>${escapeHtml(r.label)}</b></div>
+              <div>${escapeHtml(r.label)}</div>
               <div class="right"><b>${r.score}</b></div>
             </div>
           `).join("")}
         </div>
       </div>
+
+      <div class="btnrow mt">
+        <button class="btn" id="copySummary">Copier un résumé</button>
+        <button class="btn" id="printPdf">Imprimer / PDF</button>
+      </div>
+      <p class="muted">Pour PDF : imprime cette page et choisis “Enregistrer en PDF”.</p>
     </div>
 
     ${detailSection("feu")}
@@ -693,20 +623,33 @@ function mountResults() {
     ${detailSection("bois")}
 
     <div class="card">
-      <div class="small">Données stockées localement dans ton navigateur (localStorage). Rien n’est envoyé sur Internet.</div>
+      <p class="muted">Données stockées localement dans ton navigateur. Rien n’est envoyé sur Internet.</p>
     </div>
   `;
+
+  const copyBtn = $("copySummary");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async () => {
+      const text = buildShareText(payloads);
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = "Résumé copié.";
+        setTimeout(() => (copyBtn.textContent = "Copier un résumé"), 1500);
+      } catch {
+        alert("Copie impossible. Sélectionne le texte manuellement.");
+      }
+    });
+  }
+
+  const printBtn = $("printPdf");
+  if (printBtn) printBtn.addEventListener("click", () => window.print());
 }
 
-/* ------------------- Pages Intro/Dynamiques ------------------- */
+/* ------------------- Intro / Dynamiques ------------------- */
 
 function mountDynamicPageFixes() {
-  // Juste pour sécuriser les boutons si tu utilises des liens “btn”
-  // Rien de bloquant ici : si ça ne trouve rien, ça ne fait rien.
-  const btnToQuestionnaire = document.querySelectorAll('[data-go="questionnaire"]');
-  btnToQuestionnaire.forEach(b => {
-    b.addEventListener("click", () => (location.href = "questionnaire-auto.html"));
-  });
+  const btns = document.querySelectorAll('[data-go="questionnaire"]');
+  btns.forEach(b => b.addEventListener("click", () => (location.href = "questionnaire-auto.html")));
 }
 
 /* ------------------------- Boot -------------------------- */
